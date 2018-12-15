@@ -1,7 +1,3 @@
-import java.util.ArrayList;
-import java.util.Stack;
-import java.util.concurrent.ThreadLocalRandom;
-
 public class Maze {
     private final int mazeWidth;
     private final int mazeHeight;
@@ -30,7 +26,7 @@ public class Maze {
             throw new IllegalStateException("already generated");
         generated = true;
 
-        Stack<Cell> stack = new Stack<>();
+        CellStore store = new CellStore();
 
         Cell curentCell = getCell(0,0);
         curentCell.setVisited(true);
@@ -38,16 +34,16 @@ public class Maze {
         while (hasUnvisitedCells()){
             Cell unvisitedNeighbour = getUnvisitedNeighbour(curentCell);
             if(unvisitedNeighbour != null){
-                stack.push(curentCell);
+                store.push(curentCell);
                 removeWallBetweenCells(curentCell,unvisitedNeighbour);
                 curentCell = unvisitedNeighbour;
                 curentCell.setVisited(true);
             }
-            else if(!stack.isEmpty()){
-                curentCell = stack.pop();
+            else if(!store.isEmpty()){
+                curentCell = store.pop();
             }
             else {
-                throw new IllegalStateException("fuck");
+                throw new IllegalStateException();
             }
         }
 
@@ -55,64 +51,60 @@ public class Maze {
 
     private void removeWallBetweenCells(Cell cellOne, Cell cellTwo){
         if(cellOne.getHeight() == cellTwo.getHeight() && cellOne.getWidth() == cellTwo.getWidth()+1){
-            //nebeneinander, cellTwo ist links
+            //next to each other, cellTwo is on the left
             cellOne.setWallWest(false);
             cellTwo.setWallEast(false);
         }
         else if(cellOne.getHeight() == cellTwo.getHeight() && cellOne.getWidth() == cellTwo.getWidth()-1){
-            //nebeneinander, cellTwo ist rechts
+            //next to each other, cellTwo is on the right
             cellOne.setWallEast(false);
             cellTwo.setWallWest(false);
         }
         else if(cellOne.getWidth() == cellTwo.getWidth() && cellOne.getHeight() == cellTwo.getHeight()+1){
-            //uebereinander, cellTwo ist drueber
+            //over each other, cellTwo is above
             cellOne.setWallNorth(false);
             cellTwo.setWallSouth(false);
         }
         else if(cellOne.getWidth() == cellTwo.getWidth() && cellOne.getHeight() == cellTwo.getHeight()-1){
-            //uebereinander, cellTwo ist drunter
+            //over each other, cellTwo is below
             cellOne.setWallSouth(false);
             cellTwo.setWallNorth(false);
         }
         else{
-            throw new IllegalStateException("fuck");
+            throw new IllegalStateException("something went wrong");
         }
 
     }
 
     private Cell getUnvisitedNeighbour(Cell cell){
-        ArrayList<Cell> neighbours = new ArrayList<Cell>();
+        CellStore neighbours = new CellStore();
 
         int height = cell.getHeight();
         int width = cell.getWidth();
 
         if(height-1 >= 0 && !getCell(height-1,width).isVisited())
-            neighbours.add(getCell(height-1,width));
+            neighbours.push(getCell(height-1,width));
 
         if(height+1 < getMazeHeight() && !getCell(height+1,width).isVisited())
-            neighbours.add(getCell(height+1,width));
+            neighbours.push(getCell(height+1,width));
 
         if(width-1 >= 0 && !getCell(height,width-1).isVisited())
-            neighbours.add(getCell(height,width-1));
+            neighbours.push(getCell(height,width-1));
 
         if(width+1 < getMazeWidth() && !getCell(height,width+1).isVisited())
-            neighbours.add(getCell(height,width+1));
+            neighbours.push(getCell(height,width+1));
 
-        if(neighbours.isEmpty())
-            return null;
-        else
-            return neighbours.get(ThreadLocalRandom.current().nextInt(0, neighbours.size()));
+        return neighbours.getRandomCell();
     }
 
     private boolean hasUnvisitedCells(){
-        boolean result = false;
         for (int i = 0; i < getMazeHeight(); i++){
             for(int j = 0; j < getMazeWidth(); j++){
                 if(!getCell(i,j).isVisited())
-                    result = true;
+                    return true;
             }
         }
-        return result;
+        return false;
     }
 
     public String toString(){
